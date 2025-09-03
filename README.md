@@ -47,6 +47,8 @@ emcc src/main.c src/qr_util.c lib/qrcodegen.c -o qr_generator.js -O3 -s EXPORTED
 
 # Start a local web server (requires Python 3)
 python3 -m http.server
+# or
+npx serve
 
 # Open your browser to http://localhost:8000 and select the correct index.html
 ```
@@ -90,6 +92,8 @@ emcc main_web.c -o contacts.js -s ASYNCIFY -s NO_EXIT_RUNTIME=1
 
 # Start a local web server that sends the required security headers
 python3 server.py # (This assumes the custom server.py file is in the directory)
+# or
+npx serve
 
 # Open your browser to http://localhost:8000
 ```
