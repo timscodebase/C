@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>C Contact Manager</title>
+    <style>
+        body { font-family: monospace; background-color: #1e1e1e; color: #d4d4d4; padding: 0 20px; }
+        #terminal-container { max-width: 800px; margin: 20px auto; }
+        #output { width: 100%; height: 500px; border: 1px solid #333; background-color: #000; color: #00dd00; font-family: monospace; font-size: 16px; box-sizing: border-box; padding: 10px; resize: vertical; }
+        #input { width: 100%; border: 1px solid #333; background-color: #222; color: #00dd00; font-family: monospace; font-size: 16px; box-sizing: border-box; padding: 10px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <div id="terminal-container">
+        <h1>Contact Manager (C compiled to Wasm)</h1>
+        <textarea id="output" readonly></textarea>
+        <input type="text" id="input" placeholder="Type input here and press Enter..." autofocus>
+    </div>
+
+    <script>
+        const outputElement = document.getElementById('output');
+        const inputElement = document.getElementById('input');
+        
+        // This buffer will hold the text the user types for C to read
+        let inputBuffer = [];
+        // This flag tells us if the C program is waiting for input
+        let waitingForInput = false;
+
+        // When the user presses Enter in our input box...
+        inputElement.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const text = inputElement.value + "\n";
+                // Don't echo input to the screen here, let the C program do it if needed
+                
+                // Put each character's byte code into our input buffer
+                for (let i = 0; i < text.length; i++) {
+                    inputBuffer.push(text.charCodeAt(i));
+                }
+                
+                // Clear the input box for the next command
+                inputElement.value = '';
+                
+                // If the C side was waiting, this will effectively "wake it up"
+                waitingForInput = false; 
+            }
+        });
+
+        // --- Emscripten Module Setup ---
+        // This is a more robust way to define the Module and its functions
+        var Module = {
+            preRun: [],
+            postRun: [],
+
+            // This function handles all stdout from your C program
+            print: (function() {
+                return function(text) {
+                    if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                    // Add the text from printf to our textarea
+                    outputElement.value += text + "\n";
+                    outputElement.scrollTop = outputElement.scrollHeight; // Auto-scroll
+                };
+            })(),
+
+            // This function handles all stderr
+            printErr: (function() {
+                return function(text) {
+                    if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                    outputElement.value += "[ERROR] " + text + "\n";
+                    outputElement.scrollTop = outputElement.scrollHeight;
+                };
+            })(),
+            
+            // This function is called by C's input functions (scanf, fgets, etc.)
+            stdin: function() {
+                if (inputBuffer.length === 0) {
+                    // Tell the C program there's no input yet
+                    return null;
+                }
+                // Return the next character from the user's input
+                return inputBuffer.shift();
+            }
+        };
+    </script>
+    
+    <script async src="contacts.js"></script>
+
+</body>
+</html>

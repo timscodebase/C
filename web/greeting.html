@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-t">
+    <title>Wasm Greeting</title>
+</head>
+<body>
+
+    <h1>C/Wasm Strings</h1>
+    <p>Enter your name and get a greeting generated in C.</p>
+    <input type="text" id="name-input" placeholder="Enter your name" value="World">
+    <button id="greet-button" disabled>Get Greeting</button>
+
+    <script>
+        // Declare the Module object *before* the Emscripten script is loaded.
+        // This prevents the "Module is not defined" error.
+        var Module = {
+            onRuntimeInitialized: function() {
+                console.log('Wasm module loaded.');
+                const nameInput = document.getElementById('name-input');
+                const greetButton = document.getElementById('greet-button');
+
+                // Enable the button now that the Wasm module is ready.
+                greetButton.disabled = false;
+
+                greetButton.addEventListener('click', () => {
+                    const name = nameInput.value;
+
+                    // 'ccall' is an Emscripten helper to call C functions cleanly.
+                    // It automatically handles converting JS strings to C strings (char*)
+                    // and reading the returned C string back into a JS string.
+                    const greeting = Module.ccall(
+                        'get_greeting', // Name of the C function to call
+                        'string',       // The function's return type
+                        ['string'],     // An array of the function's argument types
+                        [name]          // An array of the arguments to pass
+                    );
+
+                    alert(greeting);
+                    
+                    // Note: ccall does NOT free the memory returned by C's malloc.
+                    // For this simple example, it's a minor memory leak. A more
+                    // advanced version would return the pointer and free it manually.
+                });
+            }
+        };
+    </script>
+
+    <script async src="greeting.js"></script>
+
+</body>
+</html>

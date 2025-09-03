@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Wasm GIF Maker</title>
+  </head>
+  <body>
+    <h1>Upload a video to create a GIF</h1>
+    <input type="file" id="uploader" />
+    <div id="message"></div>
+    <video id="output-video" controls></video>
+
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.2/dist/ffmpeg.min.js"></script>
+    <script>
+      const { createFFmpeg, fetchFile } = FFmpeg;
+      const ffmpeg = createFFmpeg({
+        log: true, // Log ffmpeg's progress to the browser console
+        corePath: "https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js",
+      });
+
+      const uploader = document.getElementById("uploader");
+      const message = document.getElementById("message");
+
+      const transcode = async ({ target: { files } }) => {
+        const { name } = files[0];
+        message.innerHTML = "Loading ffmpeg-core.js";
+        await ffmpeg.load();
+        message.innerHTML = "Writing file to memory...";
+        ffmpeg.FS("writeFile", name, await fetchFile(files[0]));
+        message.innerHTML = "Transcoding to GIF...";
+
+        // Run the ffmpeg command
+        await ffmpeg.run("-i", name, "-t", "2.5", "-f", "gif", "output.gif");
+
+        message.innerHTML = "Done! Creating download link...";
+        const data = ffmpeg.FS("readFile", "output.gif");
+
+        // Create a download link for the resulting GIF
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(
+          new Blob([data.buffer], { type: "image/gif" })
+        );
+        a.download = "output.gif";
+        a.innerHTML = "Download GIF";
+        message.appendChild(a);
+      };
+
+      uploader.addEventListener("change", transcode);
+    </script>
+  </body>
+</html>

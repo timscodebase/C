@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Wasm Calculator</title>
+</head>
+<body>
+
+    <h1>C/Wasm Calculator</h1>
+    <input type="number" id="num1" value="20">
+    +
+    <input type="number" id="num2" value="22">
+    <br><br>
+    <button id="add-button" disabled>Add</button>
+    <button id="sub-button" disabled>Subtract</button>
+    <h2 id="result">Result: ?</h2>
+
+    <script>
+        // THE FIX: We declare the Module object and configure it *before*
+        // the Emscripten script loads.
+        var Module = {
+            onRuntimeInitialized: function() {
+                console.log('Wasm module loaded.');
+                // Now we can safely set up our buttons
+                const num1_el = document.getElementById('num1');
+                const num2_el = document.getElementById('num2');
+                const result_el = document.getElementById('result');
+                const add_btn = document.getElementById('add-button');
+                const sub_btn = document.getElementById('sub-button');
+
+                add_btn.disabled = false;
+                sub_btn.disabled = false;
+
+                add_btn.addEventListener('click', () => {
+                    const a = parseInt(num1_el.value);
+                    const b = parseInt(num2_el.value);
+                    const sum = Module._add(a, b); // Pass JS numbers to C
+                    result_el.innerText = `Result: ${sum}`;
+                });
+
+                sub_btn.addEventListener('click', () => {
+                    const a = parseInt(num1_el.value);
+                    const b = parseInt(num2_el.value);
+                    const diff = Module._subtract(a, b);
+                    result_el.innerText = `Result: ${diff}`;
+                });
+            }
+        };
+    </script>
+    
+    <script async src="calc.js"></script>
+
+</body>
+</html>
